@@ -15,9 +15,13 @@ public class LockBatteryReceiver extends BroadcastReceiver {
     private static final String channelName = "lockbatterychannel";
     private static final int id = 1;
     private Context mContext;
-    public LockBatteryReceiver(Context context){
+    private static String title;
+    private static String content;
+    public LockBatteryReceiver(Context context, String title, String content){
         super();
         mContext = context;
+        this.title = title;
+        this.content = content;
     }
     public void createNotification(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -30,8 +34,8 @@ public class LockBatteryReceiver extends BroadcastReceiver {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
-                .setContentTitle("This is example notification")
-                .setContentText("This is example content")
+                .setContentTitle(title)
+                .setContentText(content)
                 .setSmallIcon(android.R.drawable.sym_def_app_icon);
 
         NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);

@@ -16,9 +16,13 @@ public class BatteryReceiver extends BroadcastReceiver {
     private static final String channelName = "batterychannel";
     private static final int id = 1;
     private Context mContext;
-    public BatteryReceiver(Context context){
+    private static String title;
+    private static String content;
+    public BatteryReceiver(Context context, String title, String content){
         super();
         mContext = context;
+        this.title = title;
+        this.content = content;
     }
     public void createNotification(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -29,8 +33,8 @@ public class BatteryReceiver extends BroadcastReceiver {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
-                .setContentTitle("This is example notification")
-                .setContentText("This is example content")
+                .setContentTitle(title)
+                .setContentText(content)
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE);
 

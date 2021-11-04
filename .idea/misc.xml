@@ -3,6 +3,11 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/LowBattery/app/src/main/res/drawable-anydpi/Whatsapp.xml" value="0.2074074074074074" />
+        <entry key="..\:/LowBattery/app/src/main/res/drawable-anydpi/kakao.xml" value="0.2074074074074074" />
+        <entry key="..\:/LowBattery/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2074074074074074" />
+        <entry key="..\:/LowBattery/app/src/main/res/drawable/border1.xml" value="0.34074074074074073" />
+        <entry key="..\:/LowBattery/app/src/main/res/drawable/border8.xml" value="0.2074074074074074" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable/border.xml" value="0.1" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable/border10.xml" value="0.1" />
@@ -20,7 +25,7 @@
       </map>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
   <component name="ProjectType">
