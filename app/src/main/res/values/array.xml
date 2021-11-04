@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="border">
+        <item>@drawable/border1</item>
+        <item>@drawable/border2</item>
+        <item>@drawable/border3</item>
+        <item>@drawable/border4</item>
+        <item>@drawable/border5</item>
+        <item>@drawable/border6</item>
+        <item>@drawable/border7</item>
+        <item>@drawable/border8</item>
+        <item>@drawable/border9</item>
+        <item>@drawable/border10</item>
+    </array>
+</resources>
