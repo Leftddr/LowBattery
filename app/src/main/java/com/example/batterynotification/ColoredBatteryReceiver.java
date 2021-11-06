@@ -123,7 +123,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
                     //rs : running service
                     for(int i = 0 ; i < rs.size() ; i++) {
                         if (segs[0].equalsIgnoreCase(Integer.toString(rs.get(i).pid))) {
-                            String memoryused = segs[4].substring(0, segs[4].length() - 1);
+                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
                             memoryUsed += (Float.parseFloat(memoryused) * 1024);
                             cpuUsed += (Float.parseFloat(segs[8]));
                             break;
@@ -132,7 +132,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
                     //rs : running process
                     for(int i = 0 ; i < rp.size() ; i++){
                         if (segs[0].equalsIgnoreCase(Integer.toString(rp.get(i).pid))) {
-                            String memoryused = segs[4].substring(0, segs[4].length() - 1);
+                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
                             memoryUsed += (Float.parseFloat(memoryused) * 1024);
                             cpuUsed += (Float.parseFloat(segs[8]));
                             break;

@@ -78,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
         //sendBroadcast(coloredbatteryintent);
         //sendBroadcast(popupintent);
         //if(batteryLeft >= 100) setEdgeEffect();
-        //int retval = serviceList();
-        //getCpuMemoryUsage();
+        int retval = serviceList();
+        getCpuMemoryUsage();
     }
 
     public void setEdgeEffect(){
@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
     public void getCpuMemoryUsage(){
         Runtime runtime = Runtime.getRuntime();
         Process process;
-        String cmd = "ps -aux";
+        String cmd = "top -n 1";
         memoryUsed = 0;
         cpuUsed = 0.0;
 
@@ -144,15 +144,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                     for(int i = 0 ; i < rs.size() ; i++) {
                         if (segs[0].equalsIgnoreCase(Integer.toString(rs.get(i).pid))) {
-                            String memoryused = segs[4].substring(0, segs[4].length() - 1);
+                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
                             memoryUsed += (Float.parseFloat(memoryused) * 1024);
                             cpuUsed += (Float.parseFloat(segs[8]));
+                            Log.e("mytag", Integer.toString(memoryUsed));
                             break;
                         }
                     }
                     for(int i = 0 ; i < rp.size() ; i++){
                         if (segs[0].equalsIgnoreCase(Integer.toString(rp.get(i).pid))) {
-                            String memoryused = segs[4].substring(0, segs[4].length() - 1);
+                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
                             memoryUsed += (Float.parseFloat(memoryused) * 1024);
                             cpuUsed += (Float.parseFloat(segs[8]));
                             break;
