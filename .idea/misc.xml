@@ -8,6 +8,9 @@
         <entry key="..\:/LowBattery/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2074074074074074" />
         <entry key="..\:/LowBattery/app/src/main/res/drawable/border1.xml" value="0.34074074074074073" />
         <entry key="..\:/LowBattery/app/src/main/res/drawable/border8.xml" value="0.2074074074074074" />
+        <entry key="..\:/LowBattery/app/src/main/res/layout/activity_main.xml" value="0.19791666666666666" />
+        <entry key="..\:/LowBattery/app/src/main/res/layout/battery.xml" value="0.19791666666666666" />
+        <entry key="..\:/LowBattery/app/src/main/res/layout/notification_small.xml" value="0.19791666666666666" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable/border.xml" value="0.1" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable/border10.xml" value="0.1" />

@@ -4,9 +4,15 @@ import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -19,6 +25,7 @@ import androidx.core.content.ContextCompat;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ColoredBatteryReceiver extends BroadcastReceiver {
@@ -30,11 +37,14 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
     private Context mContext;
     private static String title;
     private static String content;
-    protected List<ActivityManager.RunningServiceInfo> rs;
-    protected List<ActivityManager.RunningAppProcessInfo> rp;
     protected int totalMemory, totalCpu, memoryUsed;
     protected double cpuUsed;
     private String GROUP_KEY_WORK_EMAIL = "com.example.notigroup";
+    private int count;
+    private RemoteViews contentView;
+    private long now;
+    ArrayList<String> processNames = new ArrayList<>();
+    ArrayList<Drawable> Icons = new ArrayList<>();
 
     public ColoredBatteryReceiver(Context context, String title, String content){
         super();
@@ -44,20 +54,55 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
         this.title = title;
         this.content = content;
     }
+
+    public Bitmap drawableToBitmap(Drawable drawable){
+        if(drawable == null) return null;
+        Bitmap bitmap = null;
+        if(drawable instanceof BitmapDrawable){
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if(bitmapDrawable.getBitmap() != null) return bitmapDrawable.getBitmap();
+        }
+
+        if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+        } else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        }
+
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
     public void createNotification(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW));
         }
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mContext);
-        for(int i = 0 ; i < 3 ; i++) {
+        contentView = new RemoteViews(mContext.getPackageName(), R.layout.battery);
+        for(int i = 0 ; i < count ; i++) {
+            Bitmap bitmap;
+            if((bitmap = drawableToBitmap(Icons.get(i))) != null)
+                contentView.setImageViewBitmap(R.id.batteryimage, bitmap);
+            else
+                contentView.setImageViewResource(R.id.batteryimage, R.drawable.kakao);
+            contentView.setTextViewText(R.id.batterytext, processNames.get(i));
+            Intent notiIntent = new Intent("android.intent.action.Battery");
+            notiIntent.putExtra("time", now);
+            notiIntent.putExtra("processname", processNames.get(i));
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    mContext,
+                    0,
+                    notiIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+            contentView.setOnClickPendingIntent(R.id.batterybutton, pendingIntent);
             Notification newMessageNotification = new NotificationCompat.Builder(mContext, channelId)
-                    .setContentTitle(title)
-                    .setOnlyAlertOnce(true)
-                    .setContentText(content)
-                    .setSmallIcon(R.drawable.kak)
-                    .setColorized(true)
+                    .setSmallIcon(R.drawable.kakao)
+                    .setContent(contentView)
                     .setGroup(GROUP_KEY_WORK_EMAIL)
+                    .setOnlyAlertOnce(true)
                     .build();
             notificationManager.notify(i + 1, newMessageNotification);
         }
@@ -70,10 +115,10 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
                         .setSmallIcon(R.drawable.kakao)
                         //build summary info into InboxStyle template
                         .setStyle(new NotificationCompat.InboxStyle()
-                                .addLine("Alex Faarborg  Check this out")
-                                .addLine("Jeff Chang    Launch Party")
-                                .setBigContentTitle("2 new messages")
-                                .setSummaryText("janedoe@example.com"))
+                                .addLine("memory * cpu")
+                                .addLine("종료를 원하시면 notification을 touch하세요")
+                                .setBigContentTitle("배터리 소모 앱")
+                                .setSummaryText("배터리 소모 앱들 정리"))
                         //specify which group this notification belongs to
                         .setGroup(GROUP_KEY_WORK_EMAIL)
                         //set this notification as the summary for the group
@@ -84,74 +129,25 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
     }
     @Override
     public void onReceive(Context context, Intent intent){
-        serviceList();
-        getCpuMemoryUsage();
+        setting(context, intent);
         createNotification();
     }
 
-    public int serviceList(){
-        ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-        rs = am.getRunningServices(1000);
-        rp = am.getRunningAppProcesses();
-        return rs.size() + rp.size();
-    }
-
-    public void getCpuMemoryUsage(){
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
-        String cmd = "top -n 1";
-        memoryUsed = 0;
-        cpuUsed = 0.0;
-
-        try {
-            process = runtime.exec(cmd);
-            InputStream is = process.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-            String line;
-            try {
-                while ((line = br.readLine()) != null) {
-                    String segs[] = line.trim().split("[ ]+");
-                    for(int j = 0 ; j < segs.length ; j++) {
-                        if(j > 0 && segs[j - 1].equals("Mem:")) {
-                            totalMemory = Integer.parseInt(segs[j].substring(0, segs[j].length() - 1));
-                        }
-                        if(segs[j].length() >= 7 && segs[j].contains("%cpu")){
-                            totalCpu = Integer.parseInt(segs[j].substring(0, segs[j].length() - 4));
-                        }
-                    }
-                    //rs : running service
-                    for(int i = 0 ; i < rs.size() ; i++) {
-                        if (segs[0].equalsIgnoreCase(Integer.toString(rs.get(i).pid))) {
-                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
-                            memoryUsed += (Float.parseFloat(memoryused) * 1024);
-                            cpuUsed += (Float.parseFloat(segs[8]));
-                            break;
-                        }
-                    }
-                    //rs : running process
-                    for(int i = 0 ; i < rp.size() ; i++){
-                        if (segs[0].equalsIgnoreCase(Integer.toString(rp.get(i).pid))) {
-                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
-                            memoryUsed += (Float.parseFloat(memoryused) * 1024);
-                            cpuUsed += (Float.parseFloat(segs[8]));
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                Log.e("mytag", e.toString());
-            }
-
-        } catch (Exception e){
-            e.printStackTrace();
-            Log.e("mytag", e.toString());
+    public void setting(Context context, Intent intent){
+        count = intent.getIntExtra("count", 0);
+        now = intent.getLongExtra("time", 0);
+        String process = "process";
+        for (int i = 0 ; i < count ; i++) {
+               String newProcessName = process + Integer.toString(i);
+               String processName = intent.getStringExtra(newProcessName);
+               processNames.add(processName);
+               try {
+                   Drawable icon = context.getPackageManager().getApplicationIcon(processName);
+                   Icons.add(icon);
+               } catch (Exception e){
+                   Icons.add(null);
+                   e.printStackTrace();
+               }
         }
-    }
-
-    public void printStats(String segs[]){
-        String strs = "";
-        for(String str : segs) strs += str + " ";
-        Log.e("Stats", strs);
     }
 }
