@@ -4,10 +4,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.AppOpsManager;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -18,11 +23,17 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.jaredrummler.android.processes.AndroidProcesses;
+import com.jaredrummler.android.processes.models.AndroidAppProcess;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,6 +44,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 /*
     battery, memory usage, cpu usage, process, service
 */
@@ -54,10 +68,11 @@ public class MainActivity extends AppCompatActivity {
     protected final int process_threshold = 10;
     protected List<ActivityManager.RunningServiceInfo> rs;
     protected List<ActivityManager.RunningAppProcessInfo> rp;
-    protected int totalMemory, totalCpu, memoryUsed;
+    protected double totalMemory, totalCpu, memoryUsed;
     protected double cpuUsed;
     private Button logButton;
     private TextView textView;
+    String total = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,8 +83,11 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener(){
                     @Override
                     public void onClick(View view){
-                        String log = readLog();
-                        textView.setText(log);
+                        //String log = readLog();
+                        //textView.setText(log);
+                        List<AndroidAppProcess> processes = AndroidProcesses.getRunningAppProcesses();
+                        textView.setText(total);
+                        Toast.makeText(getApplicationContext(), String.valueOf(processes.size()), Toast.LENGTH_LONG).show();
                     }
                 }
         );
@@ -114,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         int retval = serviceList();
         ArrayList<Pair> runnings = getCpuMemoryUsage();
 
+        requestUsageStatsPermission();
         int min_ = Math.min(runnings.size(), 3);
         coloredbatteryintent.putExtra("count", min_);
         String process = "process";
@@ -124,11 +143,15 @@ public class MainActivity extends AppCompatActivity {
                 processName = rs.get(runnings.get(i).idx).process;
             else
                 processName = rp.get(runnings.get(i).idx).processName;
+            // intent에 processName을 넘기기만 하면 된다. => com.example.batterynotification.
             coloredbatteryintent.putExtra(newProcessName, processName);
         }
         long now = System.currentTimeMillis();
         coloredbatteryintent.putExtra("time", now);
         sendBroadcast(coloredbatteryintent);
+        // 현재 돌고 있는 프로세스 목록을 모두 가져온다.
+        // 권한이 설정 되어 있어야 한다.
+        getTask();
     }
 
     public void setEdgeEffect(){
@@ -185,10 +208,10 @@ public class MainActivity extends AppCompatActivity {
                     printStats(segs);
                     for(int j = 0 ; j < segs.length ; j++) {
                         if(j > 0 && segs[j - 1].equals("Mem:")) {
-                            totalMemory = Integer.parseInt(segs[j].substring(0, segs[j].length() - 1));
+                            totalMemory = Double.parseDouble(segs[j].substring(0, segs[j].length() - 1));
                         }
                         if(segs[j].length() >= 7 && segs[j].contains("%cpu")){
-                            totalCpu = Integer.parseInt(segs[j].substring(0, segs[j].length() - 4));
+                            totalCpu = Double.parseDouble(segs[j].substring(0, segs[j].length() - 4));
                         }
                     }
                     for(int i = 0 ; i < rs.size() ; i++) {
@@ -228,6 +251,7 @@ public class MainActivity extends AppCompatActivity {
     public void printStats(String segs[]){
         String strs = "";
         for(String str : segs) strs += str + " ";
+        total += (strs + "\n");
         Log.e("Stats", strs);
     }
 
@@ -260,6 +284,43 @@ public class MainActivity extends AppCompatActivity {
             Log.e("error", e.toString());
             e.printStackTrace();
             return "";
+        }
+    }
+
+    private String getTask() {
+        String currentApp = "NULL";
+        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            UsageStatsManager usm = (UsageStatsManager)this.getSystemService(Context.USAGE_STATS_SERVICE);
+            long time = System.currentTimeMillis();
+            List<UsageStats> appList = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,  0, time);
+            Log.e("booting time", String.valueOf(SystemClock.uptimeMillis()));
+            // appList안에 있는 stats을 읽어오면서 각종 필요한 함수를 사용한다.
+            // 함수는 보시면 의미 이해 하실 겁니다.
+            for(UsageStats stats : appList){
+                Log.e("mytag", String.valueOf(stats.getFirstTimeStamp()) + " ~ " + String.valueOf(stats.getLastTimeUsed()) +  " " + String.valueOf(stats.getTotalTimeInForeground()));
+            }
+        } else {
+            ActivityManager am = (ActivityManager)this.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningAppProcessInfo> tasks = am.getRunningAppProcesses();
+            currentApp = tasks.get(0).processName;
+        }
+        Log.e("adapter", "Current App in foreground is: " + currentApp);
+        return currentApp;
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    boolean hasUsageStatsPermission(Context context) {
+        AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+        int mode = appOps.checkOpNoThrow("android:get_usage_stats",
+                android.os.Process.myUid(), context.getPackageName());
+        boolean granted = mode == AppOpsManager.MODE_ALLOWED;
+        return granted;
+    }
+
+    void requestUsageStatsPermission() {
+        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+                && !hasUsageStatsPermission(this)) {
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
         }
     }
 }
