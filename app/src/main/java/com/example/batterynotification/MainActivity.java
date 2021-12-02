@@ -1,5 +1,6 @@
 package com.example.batterynotification;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -23,6 +24,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Process;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
@@ -66,8 +68,6 @@ public class MainActivity extends AppCompatActivity {
     protected TypedArray typedArray;
     protected FrameLayout frameLayout;
     protected final int process_threshold = 10;
-    protected List<ActivityManager.RunningServiceInfo> rs;
-    protected List<ActivityManager.RunningAppProcessInfo> rp;
     protected double totalMemory, totalCpu, memoryUsed;
     protected double cpuUsed;
     private Button logButton;
@@ -83,16 +83,13 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener(){
                     @Override
                     public void onClick(View view){
-                        //String log = readLog();
-                        //textView.setText(log);
-                        List<AndroidAppProcess> processes = AndroidProcesses.getRunningAppProcesses();
-                        textView.setText(total);
-                        Toast.makeText(getApplicationContext(), String.valueOf(processes.size()), Toast.LENGTH_LONG).show();
+                        String log = readLog();
+                        textView.setText(log);
                     }
                 }
         );
         getPermissions();
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////s///////////////////////////////////////
         mainNotiBroadcastReceiver = new MainNotiBroadcastReceiver();
         IntentFilter intentFilter0 = new IntentFilter("android.intent.action.Battery");
         registerReceiver(mainNotiBroadcastReceiver, intentFilter0);
@@ -117,142 +114,54 @@ public class MainActivity extends AppCompatActivity {
         typedArray = getResources().obtainTypedArray(R.array.border);
         //frameLayout = findViewById(R.id.main);
 
-        Intent intentBattery = this.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        int level = intentBattery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intentBattery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-
-        float batteryPct = level / (float)scale;
-        int batteryLeft = (int)batteryPct * 100;
-
-        //if(batteryLeft >= 10) sendBroadcast(batteryintent);
-        //if(batteryLeft >= 20) sendBroadcast(lockbatteryintent);
-        //sendBroadcast(coloredbatteryintent);
-        //sendBroadcast(popupintent);
-        //if(batteryLeft >= 100) setEdgeEffect();
-        int retval = serviceList();
-        ArrayList<Pair> runnings = getCpuMemoryUsage();
-
         requestUsageStatsPermission();
-        int min_ = Math.min(runnings.size(), 3);
-        coloredbatteryintent.putExtra("count", min_);
-        String process = "process";
-        for(int i = 0 ; i < min_ ; i++) {
-            String newProcessName = process + Integer.toString(i);
-            String processName;
-            if(runnings.get(i).service)
-                processName = rs.get(runnings.get(i).idx).process;
-            else
-                processName = rp.get(runnings.get(i).idx).processName;
-            // intent에 processName을 넘기기만 하면 된다. => com.example.batterynotification.
-            coloredbatteryintent.putExtra(newProcessName, processName);
-        }
-        long now = System.currentTimeMillis();
-        coloredbatteryintent.putExtra("time", now);
-        sendBroadcast(coloredbatteryintent);
-        // 현재 돌고 있는 프로세스 목록을 모두 가져온다.
-        // 권한이 설정 되어 있어야 한다.
-        getTask();
-    }
-
-    public void setEdgeEffect(){
-        /*
-        for(int i = 0 ; i < typedArray.length() ; i++){
-            LayerDrawable drawable = (LayerDrawable) ContextCompat.getDrawable(getApplicationContext(), typedArray.getResourceId(i, -1));
-            GradientDrawable gradientDrawable = (GradientDrawable) drawable.findDrawableByLayerId(R.id.border1);
-            gradientDrawable.setColor(Color.BLACK);
-        }
-         */
         new Thread(new Runnable() {
             @Override
             public void run() {
-                int level = 0, cri = 1;
-                for(int i = 0 ; i < 100 ; i++){
-                    String num = Integer.toString(level);
-                    if(level >= 10) {level = 9; cri *= -1;}
-                    if(level < 0) {level = 0; cri *= -1;}
-                    frameLayout.setBackground(ContextCompat.getDrawable(getApplicationContext(), typedArray.getResourceId(level, -1)));
-                    level += cri;
-                    try{
-                        Thread.sleep(50);
-                    }catch(InterruptedException e){
+                while(true){
+                    try {
+                        Intent intentBattery = getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                        int level = intentBattery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                        int scale = intentBattery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                        float batteryPct = level / (float) scale;
+                        int batteryLeft = (int)(batteryPct * 100);
+                        Log.e("err", String.valueOf(batteryLeft));
+                        if(batteryLeft > 30) {
+                            Thread.sleep(1000);
+                            continue;
+                        }
+                        ArrayList<Pair> runnings = getTask();
+                        int min_ = Math.min(runnings.size(), 3);
+                        ArrayList<Pair> ps = new ArrayList<>();
+                        double total_time = 0.0;
+                        int percent[] = new int[min_];
+                        for(int i = 0 ; i < min_ ; i++) total_time += runnings.get(i).totalTimeForeGround;
+                        Log.e("meeeee", String.valueOf(total_time));
+                        for(int i = 0 ; i < min_ ; i++) {
+                            double num = Double.valueOf((runnings.get(i).totalTimeForeGround) / total_time) * 100;
+                            percent[i] = (int) Math.round(num);
+                        }
+                        coloredbatteryintent.putExtra("count", min_);
+                        String process = "process";
+                        for(int i = 0 ; i < min_ ; i++) {
+                            String newProcessName = process + Integer.toString(i);
+                            String processName = "";
+                            processName = runnings.get(i).processName;
+                            // intent에 processName을 넘기기만 하면 된다. => com.example.batterynotification.
+                            coloredbatteryintent.putExtra(newProcessName, processName);
+                            coloredbatteryintent.putExtra(newProcessName + "percent", percent[i]);
+                        }
+                        long now = System.currentTimeMillis();
+                        coloredbatteryintent.putExtra("time", now);
+                        sendBroadcast(coloredbatteryintent);
+                        return;
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
+                        return;
                     }
                 }
             }
         }).start();
-    }
-
-    public int serviceList(){
-        ActivityManager am = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
-        rs = am.getRunningServices(1000);
-        rp = am.getRunningAppProcesses();
-        return rs.size() + rp.size();
-    }
-
-    public ArrayList<Pair> getCpuMemoryUsage(){
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
-        String cmd = "top -n 1";
-        memoryUsed = 0;
-        cpuUsed = 0.0;
-        ArrayList<Pair> runnings = new ArrayList<>();
-        try {
-            process = runtime.exec(cmd);
-            InputStream is = process.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-            String line;
-            try {
-                while ((line = br.readLine()) != null) {
-                    String segs[] = line.trim().split("[ ]+");
-                    printStats(segs);
-                    for(int j = 0 ; j < segs.length ; j++) {
-                        if(j > 0 && segs[j - 1].equals("Mem:")) {
-                            totalMemory = Double.parseDouble(segs[j].substring(0, segs[j].length() - 1));
-                        }
-                        if(segs[j].length() >= 7 && segs[j].contains("%cpu")){
-                            totalCpu = Double.parseDouble(segs[j].substring(0, segs[j].length() - 4));
-                        }
-                    }
-                    for(int i = 0 ; i < rs.size() ; i++) {
-                        if (segs[0].equalsIgnoreCase(Integer.toString(rs.get(i).pid))) {
-                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
-                            memoryUsed += (Float.parseFloat(memoryused) * 1024);
-                            cpuUsed += (Float.parseFloat(segs[8]));
-                            Pair pair = new Pair(Float.parseFloat(memoryused) * 1024, Float.parseFloat(segs[8]), i, true);
-                            runnings.add(pair);
-                            break;
-                        }
-                    }
-                    for(int i = 0 ; i < rp.size() ; i++){
-                        if (segs[0].equalsIgnoreCase(Integer.toString(rp.get(i).pid))) {
-                            String memoryused = segs[5].substring(0, segs[5].length() - 1);
-                            memoryUsed += (Float.parseFloat(memoryused) * 1024);
-                            cpuUsed += (Float.parseFloat(segs[8]));
-                            Pair pair = new Pair(Float.parseFloat(memoryused) * 1024, Float.parseFloat(segs[8]), i, false);
-                            runnings.add(pair);
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                Log.e("mytag", e.toString());
-            }
-
-        } catch (Exception e){
-            e.printStackTrace();
-            Log.e("mytag", e.toString());
-        }
-
-        Collections.sort(runnings);
-        return runnings;
-    }
-
-    public void printStats(String segs[]){
-        String strs = "";
-        for(String str : segs) strs += str + " ";
-        total += (strs + "\n");
-        Log.e("Stats", strs);
     }
 
     void getPermissions(){
@@ -287,24 +196,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String getTask() {
-        String currentApp = "NULL";
+    private ArrayList<Pair> getTask() {
+        ArrayList<Pair> currentApp = new ArrayList<>();
         if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             UsageStatsManager usm = (UsageStatsManager)this.getSystemService(Context.USAGE_STATS_SERVICE);
             long time = System.currentTimeMillis();
             List<UsageStats> appList = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,  0, time);
-            Log.e("booting time", String.valueOf(SystemClock.uptimeMillis()));
             // appList안에 있는 stats을 읽어오면서 각종 필요한 함수를 사용한다.
             // 함수는 보시면 의미 이해 하실 겁니다.
             for(UsageStats stats : appList){
-                Log.e("mytag", String.valueOf(stats.getFirstTimeStamp()) + " ~ " + String.valueOf(stats.getLastTimeUsed()) +  " " + String.valueOf(stats.getTotalTimeInForeground()));
+                Pair pair = new Pair(stats.getPackageName(), stats.getLastTimeStamp(), stats.getLastTimeUsed(), stats.getTotalTimeInForeground());
+                currentApp.add(pair);
             }
         } else {
             ActivityManager am = (ActivityManager)this.getSystemService(Context.ACTIVITY_SERVICE);
             List<ActivityManager.RunningAppProcessInfo> tasks = am.getRunningAppProcesses();
-            currentApp = tasks.get(0).processName;
         }
-        Log.e("adapter", "Current App in foreground is: " + currentApp);
+        Collections.sort(currentApp);
         return currentApp;
     }
 

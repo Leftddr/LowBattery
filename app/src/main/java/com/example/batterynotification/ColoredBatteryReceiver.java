@@ -45,6 +45,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
     private long now;
     ArrayList<String> processNames = new ArrayList<>();
     ArrayList<Drawable> Icons = new ArrayList<>();
+    ArrayList<Integer> percents = new ArrayList<>();
 
     public ColoredBatteryReceiver(Context context, String title, String content){
         super();
@@ -89,6 +90,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
             else
                 contentView.setImageViewResource(R.id.batteryimage, R.drawable.kakao);
             contentView.setTextViewText(R.id.batterytext, processNames.get(i));
+            contentView.setTextViewText(R.id.percent, String.valueOf(percents.get(i)) + "%");
             Intent notiIntent = new Intent("android.intent.action.Battery");
             notiIntent.putExtra("time", now);
             notiIntent.putExtra("processname", processNames.get(i));
@@ -141,6 +143,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
                String newProcessName = process + Integer.toString(i);
                String processName = intent.getStringExtra(newProcessName);
                processNames.add(processName);
+               percents.add(intent.getIntExtra(newProcessName + "percent", 0));
                try {
                    Drawable icon = context.getPackageManager().getApplicationIcon(processName);
                    Icons.add(icon);
