@@ -35,7 +35,7 @@ public class BatteryReceiver extends BroadcastReceiver {
                 .setOnlyAlertOnce(true)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setSmallIcon(android.R.color.transparent)
                 .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE);
 
         NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);

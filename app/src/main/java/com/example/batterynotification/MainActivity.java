@@ -53,7 +53,7 @@ import java.util.TreeMap;
     battery, memory usage, cpu usage, process, service
 */
 public class MainActivity extends AppCompatActivity {
-    protected BatteryReceiver batterReceiver;
+    protected BatteryReceiver batteryReceiver;
     protected LockBatteryReceiver lockBatteryReceiver;
     protected ColoredBatteryReceiver coloredBatteryReceiver;
     protected MainNotiBroadcastReceiver mainNotiBroadcastReceiver;
@@ -94,9 +94,9 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter intentFilter0 = new IntentFilter("android.intent.action.Battery");
         registerReceiver(mainNotiBroadcastReceiver, intentFilter0);
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        batterReceiver = new BatteryReceiver(this, "배터리 부족", "핸드폰의 배터리 잔량이 20% 남음");
+        batteryReceiver = new BatteryReceiver(this, "배터리가 30% 남았습니다", "배터리 소모앱을 확인하세요");
         IntentFilter intentFilter1 = new IntentFilter("com.example.lowbattery");
-        registerReceiver(batterReceiver, intentFilter1);
+        registerReceiver(batteryReceiver, intentFilter1);
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         lockBatteryReceiver = new LockBatteryReceiver(this, "dfsfsfs", "You need to charge your battey");
@@ -126,6 +126,8 @@ public class MainActivity extends AppCompatActivity {
                         float batteryPct = level / (float) scale;
                         int batteryLeft = (int)(batteryPct * 100);
                         Log.e("err", String.valueOf(batteryLeft));
+                        // 배터리 threshold
+                        // 1% 당 3분으로 계산
                         if(batteryLeft > 30) {
                             Thread.sleep(1000);
                             continue;
@@ -137,9 +139,15 @@ public class MainActivity extends AppCompatActivity {
                         int percent[] = new int[min_];
                         for(int i = 0 ; i < min_ ; i++) total_time += runnings.get(i).totalTimeForeGround;
                         Log.e("meeeee", String.valueOf(total_time));
+                        // Baseline : percent
+//                        for(int i = 0 ; i < min_ ; i++) {
+//                            double num = Double.valueOf((runnings.get(i).totalTimeForeGround) / total_time) * 100;
+//                            percent[i] = (int) Math.round(num);
+//                        }
+                        // Time reduction & addition
                         for(int i = 0 ; i < min_ ; i++) {
                             double num = Double.valueOf((runnings.get(i).totalTimeForeGround) / total_time) * 100;
-                            percent[i] = (int) Math.round(num);
+                            percent[i] = percentToTime(batteryLeft, num);
                         }
                         coloredbatteryintent.putExtra("count", min_);
                         String process = "process";
@@ -154,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
                         long now = System.currentTimeMillis();
                         coloredbatteryintent.putExtra("time", now);
                         sendBroadcast(coloredbatteryintent);
+                        sendBroadcast(batteryintent);
                         return;
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -162,6 +171,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
+    }
+
+    int percentToTime(int batteryTotal, double currentBattery){
+        double percent = currentBattery / 100;
+        double consumption = batteryTotal * percent;
+        return (int) consumption;
     }
 
     void getPermissions(){

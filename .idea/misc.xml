@@ -25,6 +25,9 @@
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/layout/activity_main.xml" value="0.13072916666666667" />
         <entry key="..\:/Users/lg/AndroidStudioProjects/BatteryNotification/app/src/main/res/layout/notification_small.xml" value="0.2015625" />
+        <entry key="..\:/Users/user/Desktop/LowBattery/app/src/main/res/layout/activity_main.xml" value="0.12335359675785208" />
+        <entry key="..\:/Users/user/Desktop/LowBattery/app/src/main/res/layout/battery.xml" value="0.12335359675785208" />
+        <entry key="..\:/Users/user/Desktop/LowBattery/app/src/main/res/layout/notification_small.xml" value="0.12335359675785208" />
       </map>
     </option>
   </component>

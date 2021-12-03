@@ -90,7 +90,11 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
             else
                 contentView.setImageViewResource(R.id.batteryimage, R.drawable.kakao);
             contentView.setTextViewText(R.id.batterytext, processNames.get(i));
-            contentView.setTextViewText(R.id.percent, String.valueOf(percents.get(i)) + "%");
+//            contentView.setTextViewText(R.id.percent, String.valueOf(percents.get(i)) + "%");
+            // time reduction
+            contentView.setTextViewText(R.id.percent, String.valueOf("- " + percents.get(i)) + " min");
+            // time addition
+//            contentView.setTextViewText(R.id.percent, String.valueOf("+ " + percents.get(i)) + " min");
             Intent notiIntent = new Intent("android.intent.action.Battery");
             notiIntent.putExtra("time", now);
             notiIntent.putExtra("processname", processNames.get(i));
@@ -100,6 +104,7 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
                     notiIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
             contentView.setOnClickPendingIntent(R.id.batterybutton, pendingIntent);
+
             Notification newMessageNotification = new NotificationCompat.Builder(mContext, channelId)
                     .setSmallIcon(R.drawable.kakao)
                     .setContent(contentView)
@@ -133,6 +138,11 @@ public class ColoredBatteryReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent){
         setting(context, intent);
         createNotification();
+    }
+
+    String getAppName (String processName){
+        String[] result = processName.split("\\.");
+        return result[result.length-1];
     }
 
     public void setting(Context context, Intent intent){
