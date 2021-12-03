@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                         float batteryPct = level / (float) scale;
                         int batteryLeft = (int)(batteryPct * 100);
                         Log.e("err", String.valueOf(batteryLeft));
-                        if(batteryLeft > 30) {
+                        if(batteryLeft > 100) {
                             Thread.sleep(1000);
                             continue;
                         }
@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     String readLog(){
-        String file_path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/simulation.txt";
+        String file_path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.example.batterynotification/simulation.txt";
         File file = new File(file_path);
         if(!file.exists()) return "";
         try {
@@ -205,6 +205,9 @@ public class MainActivity extends AppCompatActivity {
             // appList안에 있는 stats을 읽어오면서 각종 필요한 함수를 사용한다.
             // 함수는 보시면 의미 이해 하실 겁니다.
             for(UsageStats stats : appList){
+                if(stats.getLastTimeStamp() == 0 || stats.getLastTimeUsed() == 0 || stats.getTotalTimeInForeground() == 0) continue;
+                String processName = stats.getPackageName();
+                if (processName.contains("com.android") || processName.contains("com.google") || processName.contains("system.")) continue;
                 Pair pair = new Pair(stats.getPackageName(), stats.getLastTimeStamp(), stats.getLastTimeUsed(), stats.getTotalTimeInForeground());
                 currentApp.add(pair);
             }
@@ -212,7 +215,11 @@ public class MainActivity extends AppCompatActivity {
             ActivityManager am = (ActivityManager)this.getSystemService(Context.ACTIVITY_SERVICE);
             List<ActivityManager.RunningAppProcessInfo> tasks = am.getRunningAppProcesses();
         }
-        Collections.sort(currentApp);
+        try {
+            Collections.sort(currentApp);
+        } catch (Exception e) {
+            Log.e("dfsdfs", e.toString());
+        }
         return currentApp;
     }
 
